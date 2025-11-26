@@ -33,19 +33,31 @@ body {
 .google-logo-container {
   display: flex;
   justify-content: center;
-  margin-bottom:20em;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20em;
 }
 
 img {
-        max-width: 30%;
-        height: auto;
-    }
+  max-width: 30%;
+  height: auto;
+}
 .navbar {
-  background-color:white;
-  color:black;
+  background-color: white;
+  color: black;
 }
 
 .navbar-item {
-  color:black;
-  
+  color: black;
+}
+
+.navbar-end {
+  margin-right: 14em;
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
 }
