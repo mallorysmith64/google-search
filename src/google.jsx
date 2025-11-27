@@ -6,10 +6,14 @@ function GoogleLogo() {
     <>
       <div className="google-container">
         <img src={googlePic} alt="Google Logo" />
-        <section className="search-bar-container">
-          <form action="/search" method="get">
+        <section>
+          <form className="form-search" action="/search" method="get">
             <input type="search" name="query" placeholder="Search..." />
-            <button type="submit">Search</button>
+            <div className="search-btn-container">
+              <button className="search-btn" type="submit">
+                Google Search
+              </button>
+            </div>
           </form>
         </section>
       </div>

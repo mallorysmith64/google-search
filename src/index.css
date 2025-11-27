@@ -39,17 +39,28 @@ body {
   margin-bottom: 20em;
 }
 
-.search-container {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  align-items: center;
-}
-
 input {
+  background-color:white;
   margin-left:12m;
   width:40em;
   height:5m;
+}
+
+.form-search {
+  background-color: white;
+}
+
+.search-btn-container {
+  display:flex;
+  justify-content: center;
+  margin-top:2.5em;
+}
+
+.search-btn {
+  margin-right:8em;
+  border-radius: 8px;
+  padding:0.5em;
+  background-color: gray;
 }
 
 /* #google pic */
