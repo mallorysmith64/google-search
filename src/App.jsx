@@ -1,5 +1,6 @@
 import GoogleLogo from "./google";
 import NavBar from "./NavBar";
+import Footer from "./Footer"
 
 function App() {
   return (
@@ -7,6 +8,7 @@ function App() {
       <div>
         <NavBar />
         <GoogleLogo />
+        <Footer/>
       </div>
     </>
   );

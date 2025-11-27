@@ -83,4 +83,9 @@ img {
   margin-right: 14em;
 }
 
-
+/* footer */
+.footer {
+  color:black;
+  background-color:white;
+  padding:1em;
+}
