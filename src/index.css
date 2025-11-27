@@ -30,7 +30,8 @@ body {
   min-height: 100vh;
 }
 
-.google-logo-container {
+/* searchbar */
+.google-container {
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -38,10 +39,26 @@ body {
   margin-bottom: 20em;
 }
 
+.search-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+}
+
+input {
+  margin-left:12m;
+  width:40em;
+  height:5m;
+}
+
+/* #google pic */
 img {
   max-width: 30%;
   height: auto;
 }
+
+/* all navbar */
 .navbar {
   background-color: white;
   color: black;
@@ -55,9 +72,4 @@ img {
   margin-right: 14em;
 }
 
-.search-container {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  align-items: center;
-}
+

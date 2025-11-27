@@ -1,21 +1,15 @@
 import GoogleLogo from "./google";
 import NavBar from "./NavBar";
-import Search from "./Search";
 
 function App() {
-  
   return (
-    
-  <>
-    <div>
-      <NavBar />
-      <GoogleLogo />
-      <Search/>
-     
-      
-    </div>
-  </>
-)
+    <>
+      <div>
+        <NavBar />
+        <GoogleLogo />
+      </div>
+    </>
+  );
 }
 
 export default App;
