@@ -1,6 +1,7 @@
 import GooglePage from "./google";
 import NavBar from "./NavBar";
-import Footer from "./Footer"
+import Footer from "./Footer";
+// import SearchResultsPage from "./Results";
 
 function App() {
   return (
@@ -8,7 +9,8 @@ function App() {
       <div>
         <NavBar />
         <GooglePage />
-        <Footer/>
+        {/* <SearchResultsPage /> */}
+        <Footer />
       </div>
     </>
   );
