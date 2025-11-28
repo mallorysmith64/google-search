@@ -8,11 +8,17 @@ function GoogleLogo() {
         <img src={googlePic} alt="Google Logo" />
         <section>
           <form className="form-search" action="/search" method="get">
-            <input type="search" name="query" placeholder="Search..." />
+           <div class="gcse-search"></div>
+            <script
+                async
+                src="https://cse.google.com/cse.js?cx=540d53540dba545e2"
+              ></script>
+             
             <div className="search-btn-container">
               <button className="search-btn" type="submit">
                 Google Search
               </button>
+              
             </div>
           </form>
         </section>

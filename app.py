@@ -28,12 +28,4 @@ try:
 except redis.exceptions.ConnectionError as e:
     # This block handles failures where the client couldn't talk to the server (network, server down, wrong port/host).
     print(f"🛑 Connection Error: Could not reach Redis server at {REDIS_HOST}:{REDIS_PORT}. Is it running? Details: {e}")
-
-# try:
-#     r = redis.Redis(
-#         host='redis-12907.c238.us-central1-2.gce.cloud.redislabs.com',
-#         port=12907,
-#         decode_responses=True,
-#         username="default",
-#         password="mEKAkLijrr9Yo8PUjQaKmv1wgLQ5Q0f4",
-# )
+    
