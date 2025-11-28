@@ -1,19 +1,14 @@
 import React from "react";
 import googlePic from "./images/google-pic.png";
 
-function GoogleLogo() {
+function GooglePage() {
   return (
     <>
       <div className="google-container">
         <img src={googlePic} alt="Google Logo" />
         <section>
           <form className="form-search" action="/search" method="get">
-           <div class="gcse-search"></div>
-            <script
-                async
-                src="https://cse.google.com/cse.js?cx=540d53540dba545e2"
-              ></script>
-             
+            <input type="search" name="query" placeholder="Search..." />
             <div className="search-btn-container">
               <button className="search-btn" type="submit">
                 Google Search
@@ -27,4 +22,4 @@ function GoogleLogo() {
   );
 }
 
-export default GoogleLogo;
+export default GooglePage
