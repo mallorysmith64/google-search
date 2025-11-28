@@ -7,7 +7,7 @@ function SearchResultsPage() {
     const resp = await axios.get('https://www.googleapis.com/customsearch/v1?key=AIzaSyDvknsVPa_byq5U4mjzbHJyeH7TCs1PnpQ&cx=540d53540dba545e2&q=PYTHON')
     console.log('get this query response', resp)
     console.log('get this query', resp.data)
-    set(resp.data)
+    setResults(resp.data)
   }
 
   useEffect(() => {

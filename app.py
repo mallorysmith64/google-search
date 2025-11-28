@@ -1,8 +1,17 @@
 """Basic connection example.
 """
 
+from flask import Flask
 import redis
 import json
+from flask_cors import CORS
+
+# Initialize the Flask application
+app = Flask(__name__)
+
+# 2. Add this line immediately after app = Flask(__name__)
+# This is the easiest way: it allows ALL origins (*) to access ALL routes.
+CORS(app)
 
 REDIS_HOST = 'redis-12907.c238.us-central1-2.gce.cloud.redislabs.com'
 REDIS_PORT = 12907
