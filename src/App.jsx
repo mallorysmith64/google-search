@@ -1,24 +1,24 @@
 import GooglePage from "./google";
 import NavBar from "./NavBar";
 import Footer from "./Footer";
-import { Routes } from "react-router";
-// import Results from "./Results"
+import { BrowserRouter, Routes, Route } from "react-router";
+import Results from "./Results";
 // import React from 'react'
 
 function App() {
   return (
     <>
       <div>
-        <NavBar />
-        <GooglePage />
-        {/* <Results/> */}
-        <Footer />
-       
+        <BrowserRouter>
+          <NavBar />
+          <GooglePage />
+          <Routes>
+            <Route path="/search?query=" element={<GooglePage/>}/>
+            <Route path="/results" element={<Results />} />
+          </Routes>
+          <Footer />
+        </BrowserRouter>
       </div>
-      {/* <Routes>
-          {/* Ensure this path matches the URL you are viewing */}
-           {/* <Route path="/search" element={<Results/>} />
-        </Routes>  */}
     </>
   );
 }

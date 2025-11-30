@@ -5,8 +5,9 @@ import Results from "./Results";
 
 function GooglePage() {
   let navigate = useNavigate();
-  const handleNavigate = () => {
-    navigate("/results"); // Navigates to /some-path
+  const handleClick = (event) => {
+    event.preventDefault();
+    navigate("/results");
   };
 
   const handleChange = (event) => {
@@ -28,9 +29,8 @@ function GooglePage() {
             />
             <div className="search-btn-container">
               <button
-                onClick={handleNavigate}
+                onClick={handleClick}
                 className="search-btn"
-                type="submit"
               >
                 Google Search
               </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// import axios from "axios";
+import axios from "axios";
 
 function Results() {
   const [results, setResults] = useState([]);
@@ -33,12 +33,12 @@ function Results() {
     <>
       <div>
         <h2>Results:</h2>
-        {results.map((item) => (
+        {/* {results.map((item) => (
           <div key={item.url}>
             <h3>{item.title}</h3>
             <p>{item.snippet}</p>
           </div>
-        ))}
+        ))} */}
       </div>
     </>
   );
