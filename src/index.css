@@ -82,3 +82,15 @@ img {
   background-color:white;
   padding:1em;
 }
+
+/* results page */
+.search-text-container {
+  display:flex;
+  justify-content: flex-start;
+  margin-right:55em;
+}
+
+.results-text-header {
+  display:flex;
+  justify-content: flex-start;
+}

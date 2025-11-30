@@ -1,7 +1,6 @@
 import React from "react";
 import googlePic from "./images/google-pic.png";
 import { useNavigate } from "react-router-dom";
-import Results from "./Results";
 
 function GooglePage() {
   let navigate = useNavigate();
@@ -34,7 +33,7 @@ function GooglePage() {
               >
                 Google Search
               </button>
-              <Results />
+             
             </div>
           </form>
         </section>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import googlePic from "./images/google-pic.png";
 
 function Results() {
   const [results, setResults] = useState([]);
@@ -24,21 +25,25 @@ function Results() {
   };
 
   useEffect(() => {
-    console.log("use effect is running")
+    console.log("use effect is running");
     getResults();
     console.log("resp here");
   }, []);
 
   return (
     <>
-      <div>
-        <h2>Results:</h2>
-        {/* {results.map((item) => (
-          <div key={item.url}>
-            <h3>{item.title}</h3>
-            <p>{item.snippet}</p>
-          </div>
-        ))} */}
+      <div className="google-container">
+        <img src={googlePic} alt="Google Logo" />
+
+        <section className="search-text-container">
+          <h2 className="results-text-header">Results:</h2>
+          {results.map((item) => (
+            <div key={item.url}>
+              <h3>{item.title}</h3>
+              <p>{item.snippet}</p>
+            </div>
+          ))}
+        </section>
       </div>
     </>
   );
