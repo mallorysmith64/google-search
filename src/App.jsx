@@ -11,10 +11,17 @@ function App() {
       <div>
         <BrowserRouter>
           <NavBar />
-          <GooglePage />
-          <Routes>
-            <Route path="/search?query=" element={<GooglePage/>}/>
+         <Routes>
+            
+            {/* 1. Set the GooglePage as the default route ("/") */}
+            <Route path="/" element={<GooglePage />} /> 
+            
+            {/* 2. The Results page route. Keep this simple, the component handles the search logic */}
             <Route path="/results" element={<Results />} />
+            
+            {/* 3. Optional: A route for your old search path, redirecting back to the main search page */}
+            {/* <Route path="/search" element={<GooglePage />} /> */}
+            
           </Routes>
           <Footer />
         </BrowserRouter>
