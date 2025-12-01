@@ -87,10 +87,16 @@ img {
 .search-text-container {
   display:flex;
   justify-content: flex-start;
-  margin-right:55em;
+  flex-wrap: wrap;
+  color:black;
+  padding:2em;
 }
 
 .results-text-header {
   display:flex;
   justify-content: flex-start;
+}
+
+.results-text-container::after {
+  white-space: pre-wrap;
 }

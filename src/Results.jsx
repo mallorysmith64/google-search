@@ -36,7 +36,9 @@ function Results() {
         <img src={googlePic} alt="Google Logo" />
 
         <section className="search-text-container">
-          <h2 className="results-text-header">Results:</h2>
+          <div className="results-text-container">
+            <h2 className="results-text-header">Results: </h2>
+          </div>
           {results.map((item) => (
             <div key={item.url}>
               <h3>{item.title}</h3>
