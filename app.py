@@ -18,7 +18,10 @@ else:
 mappings = {
     "properties": {
         "text": {
-            "type": "semantic_text",
+            "title": "",
+            "body_text": "semantic_text",
+            "url":"",
+            "snippet":"",
         }
     }
 }
