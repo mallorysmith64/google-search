@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from elasticsearch import Elasticsearch, helpers
 client = Elasticsearch(
     "https://my-elasticsearch-project-ec4f42.es.us-central1.gcp.elastic.cloud:443",
@@ -73,3 +74,45 @@ search_response = client.search(
     retriever=retriever_object,
 )
 print(search_response['hits']['hits'])
+=======
+"""Basic connection example.
+"""
+
+from flask import Flask
+import redis
+import json
+from flask_cors import CORS
+
+# Initialize the Flask application
+app = Flask(__name__)
+
+# 2. Add this line immediately after app = Flask(__name__)
+# This is the easiest way: it allows ALL origins (*) to access ALL routes.
+CORS(app)
+
+REDIS_HOST = 'redis-12907.c238.us-central1-2.gce.cloud.redislabs.com'
+REDIS_PORT = 12907
+REDIS_PASSWORD = "mEKAkLijrr9Yo8PUjQaKmv1wgLQ5Q0f4"
+
+try:
+    r = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        decode_responses=True,
+        username="default",
+        password=REDIS_PASSWORD,
+    )
+
+    r.ping()
+    print("Successfully connected to Redis")
+    success = r.set("foo", "bar")
+    print(f"'foo' to 'bar' successful: {success}")
+    # True
+    result = r.get("foo")
+    print(f"Retrieved value for 'foo': {result}")
+
+except redis.exceptions.ConnectionError as e:
+    # This block handles failures where the client couldn't talk to the server (network, server down, wrong port/host).
+    print(f"🛑 Connection Error: Could not reach Redis server at {REDIS_HOST}:{REDIS_PORT}. Is it running? Details: {e}")
+    
+>>>>>>> parent of f6e4bdf (add initial elastic search)
