@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 from elasticsearch import Elasticsearch, helpers
 client = Elasticsearch(
     "https://my-elasticsearch-project-ec4f42.es.us-central1.gcp.elastic.cloud:443",
@@ -75,6 +76,8 @@ search_response = client.search(
 )
 print(search_response['hits']['hits'])
 =======
+=======
+>>>>>>> parent of f6e4bdf (add initial elastic search)
 """Basic connection example.
 """
 
@@ -115,4 +118,7 @@ except redis.exceptions.ConnectionError as e:
     # This block handles failures where the client couldn't talk to the server (network, server down, wrong port/host).
     print(f"🛑 Connection Error: Could not reach Redis server at {REDIS_HOST}:{REDIS_PORT}. Is it running? Details: {e}")
     
+<<<<<<< HEAD
+>>>>>>> parent of f6e4bdf (add initial elastic search)
+=======
 >>>>>>> parent of f6e4bdf (add initial elastic search)
