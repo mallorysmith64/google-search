@@ -1,12 +1,18 @@
 from elasticsearch import Elasticsearch, helpers
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 client = Elasticsearch(
-    "https://my-elasticsearch-project-ec4f42.es.us-central1.gcp.elastic.cloud:443",
-    api_key="Z2tkMTVab0JqWnZfTWJOYW15Nkc6bzFubmhRUk94T1FCRHdWYmw2aVVQZw=="
+    hosts = os.getenv("ELASTIC_HOST_URL"),
+    api_key = os.getenv("API_KEY")
 )
+
 # -----------------------------
 # Define the index name and create index (if it doesn't exist)
 # -----------------------------
-index_name = "national-parks"
+index_name = "web_search_index"
 if not client.indices.exists(index=index_name):
     create_response = client.indices.create(index=index_name)
     print("Index created:", create_response)
@@ -18,10 +24,10 @@ else:
 mappings = {
     "properties": {
         "text": {
-            "title": "",
-            "body_text": "semantic_text",
             "url":"",
+            "title": "",
             "snippet":"",
+            "body_text": "semantic_text",
         }
     }
 }

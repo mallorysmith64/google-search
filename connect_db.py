@@ -1,12 +1,50 @@
 from flask import Flask, request, jsonify, render_template_string
 from elasticsearch import Elasticsearch, helpers
+from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+app = Flask(__name__)
+
+# 2. Add this line immediately after app = Flask(__name__)
+# This is the easiest way: it allows ALL origins (*) to access ALL routes.
+CORS(app)
+
+load_dotenv()
 
 # Attempt to import mapping_data; provide sensible defaults if not found
-try:
-    from mapping_data import INDEX_NAME, MAPPINGS, DOCUMENTS
-except Exception:
+import importlib.util
+
+spec = importlib.util.find_spec("mapping_data")
+if spec is not None:
+    mapping_data = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mapping_data)
+    INDEX_NAME = getattr(mapping_data, "INDEX_NAME", "parks_index")
+    MAPPINGS = getattr(mapping_data, "MAPPINGS", {
+        "properties": {
+            "url": {"type": "keyword"},
+            "title": {"type": "text"},
+            "snippet": {"type": "text"},
+            "body_text": {"type": "text"}
+        }
+    })
+    DOCUMENTS = getattr(mapping_data, "DOCUMENTS", [
+        {
+            "title": "Yosemite National Park",
+            "body_text": "Yosemite is famous for its granite cliffs and waterfalls.",
+            "url": "https://example.org/yosemite",
+            "snippet": "Famous for El Capitan and Half Dome."
+        },
+        {
+            "title": "Yellowstone National Park",
+            "body_text": "Yellowstone is known for geothermal features and wildlife.",
+            "url": "https://example.org/yellowstone",
+            "snippet": "Home to Old Faithful and large bison herds."
+        }
+    ])
+else:
     # Fallback defaults for local development or when mapping_data.py is missing.
-    INDEX_NAME = "parks_index"
+    INDEX_NAME = "web_search_index"
     MAPPINGS = {
         "properties": {
             "title": {"type": "text"},
@@ -35,11 +73,10 @@ except Exception:
 # --------------------------------------------------------
 # Use the "Deployment ID" (the full, long string you copied) here.
 # This variable is your ELASTIC_CLOUD_ID.
-ELASTIC_HOST_URL = "my-elasticsearch-project-ec4f42.es.us-central1.gcp.elastic.cloud:443" 
+ELASTIC_HOST_URL = os.getenv("ELASTIC_HOST_URL")
 # Your API Key, which you generate on the same page as the Deployment ID.
-ELASTIC_API_KEY = "Z2tkMTVab0JqWnZfTWJOYW15Nkc6bzFubmhRUk94T1FCRHdWYmw2aVVQZw=="
+ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY")
 
-app = Flask(__name__)
 client = None
 
 def init_elasticsearch_client():
