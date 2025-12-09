@@ -3,6 +3,8 @@ from elasticsearch import Elasticsearch, helpers
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import csv
+import importlib.util
 
 app = Flask(__name__)
 
@@ -13,13 +15,12 @@ CORS(app)
 load_dotenv()
 
 # Attempt to import mapping_data; provide sensible defaults if not found
-import importlib.util
 
 spec = importlib.util.find_spec("mapping_data")
 if spec is not None:
     mapping_data = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mapping_data)
-    INDEX_NAME = getattr(mapping_data, "INDEX_NAME", "parks_index")
+    INDEX_NAME = getattr(mapping_data, "INDEX_NAME", "search-index")
     MAPPINGS = getattr(mapping_data, "MAPPINGS", {
         "properties": {
             "url": {"type": "keyword"},
@@ -28,7 +29,7 @@ if spec is not None:
             "body_text": {"type": "text"}
         }
     })
-    DOCUMENTS = getattr(mapping_data, "DOCUMENTS", [
+    documents = getattr(mapping_data, "documents", [
         {
             "title": "Yosemite National Park",
             "body_text": "Yosemite is famous for its granite cliffs and waterfalls.",
@@ -44,7 +45,7 @@ if spec is not None:
     ])
 else:
     # Fallback defaults for local development or when mapping_data.py is missing.
-    INDEX_NAME = "web_search_index"
+    INDEX_NAME = "search_index"
     MAPPINGS = {
         "properties": {
             "title": {"type": "text"},
@@ -53,7 +54,7 @@ else:
             "snippet": {"type": "text"}
         }
     }
-    DOCUMENTS = [
+    documents = [
         {
             "title": "Yosemite National Park",
             "body_text": "Yosemite is famous for its granite cliffs and waterfalls.",
@@ -67,7 +68,8 @@ else:
             "snippet": "Home to Old Faithful and large bison herds."
         }
     ]
-
+    
+CSV_FILENAME = "britannica_news.csv"
 # --------------------------------------------------------
 # 1. Configuration (REPLACE WITH YOUR ACTUAL CREDENTIALS)
 # --------------------------------------------------------
@@ -119,6 +121,9 @@ def index_data():
         return jsonify({"error": "Elasticsearch connection failed"}), 500
 
     try:
+        csv_documents = load_data_from_csv(CSV_FILENAME)
+        if not csv_documents:
+             return jsonify({"error": f"Failed to load documents from {CSV_FILENAME}. Check file path and contents."}), 500
         # A. Create or verify index existence
         if es_client.indices.exists(index=INDEX_NAME):
             # For simplicity, we delete and recreate to ensure the new mapping is applied
@@ -137,8 +142,7 @@ def index_data():
 
         # C. Bulk ingest documents (allowing time for semantic model loading)
         ingestion_timeout=300 
-        actions = [{'_index': INDEX_NAME, '_source': doc} for doc in DOCUMENTS]
-
+        actions = [{'_index': INDEX_NAME, '_source': doc} for doc in csv_documents]
         bulk_response = helpers.bulk(
             es_client.options(request_timeout=ingestion_timeout),
             actions,
@@ -146,7 +150,7 @@ def index_data():
         )
         
         return jsonify({
-            "status": "Index created and data ingested successfully",
+            "status": f"Index created and {len(csv_documents)} documents from CSV ingested successfully",
             "bulk_stats": bulk_response
         })
 
@@ -270,6 +274,42 @@ def home_page():
     """
     return render_template_string(html_template)
 
+#put csv into elasticsearch
+url = "https://www.britannica.com"
+
+def load_data_from_csv(filename):
+    """
+    Reads data from the scraped CSV and formats it for Elasticsearch bulk ingestion.
+    """
+    documents = []
+    try:
+        with open(filename, mode='r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            
+            for row in reader:
+                # IMPORTANT: Verify that 'Content' is the correct column header from your CSV
+                if 'Content' in row:
+                    documents.append({
+                        "title": "Britannica",
+                        "url": url,
+                        "body_text": row['Content'], 
+                        "snippet": row['Content'][:200].strip() + "..." 
+                    })
+                else:
+                    print(f"🚨 Skipping row: 'Content' column not found in CSV row: {row.keys()}")
+            
+        print(f"✅ Loaded {len(documents)} documents from {filename}.")
+        return documents
+
+    except FileNotFoundError:
+        # 🔑 This is the key error check
+        print(f"🚨 CRITICAL ERROR: Scraped data file '{filename}' not found. Check file path!")
+        return [] # Return an empty list so the indexer knows it failed
+    except Exception as e:
+        print(f"🚨 Error reading CSV: {e}")
+        return []
+
 if __name__ == '__main__':
     # You would typically use a more robust server like gunicorn for production
     app.run(debug=True, port=5000)
+    
