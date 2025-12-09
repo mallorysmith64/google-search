@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import googlePic from "./images/google-pic.png";
+import { useLocation } from "react-router-dom";
 
 function Results() {
+  const location = useLocation();
+  const query = location.state?.query || "";
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const getResults = async () => {
     try {
-      const resp = await axios.get(
-        "https://www.googleapis.com/customsearch/v1?key=AIzaSyDvknsVPa_byq5U4mjzbHJyeH7TCs1PnpQ&cx=540d53540dba545e2&q=PYTHON"
-      );
+      const resp = await fetch(`http://127.0.0.1:5000/search?q=${encodeURIComponent(query)}`);
       console.log("get this query response", resp);
       console.log(resp.data);
       console.log(resp.items);
@@ -26,9 +27,15 @@ function Results() {
 
   useEffect(() => {
     console.log("use effect is running");
-    getResults();
-    console.log("resp here");
-  }, []);
+   getResults(); 
+  }, [query]);
+
+
+  if (loading) {
+    return <div>Loading results...</div>;
+  }
+
+  const headerText = query ? `Results for: "${query}"` : "Please enter a search query.";
 
   return (
     <>
@@ -37,7 +44,7 @@ function Results() {
 
         <section className="search-text-container">
           <div className="results-text-container">
-            <h2 className="results-text-header">Results: </h2>
+            <h2 className="results-text-header">{headerText}</h2>
           </div>
           {results.map((item) => (
             <div key={item.url}>
@@ -50,5 +57,25 @@ function Results() {
     </>
   );
 }
+
+
+
+
+// {results.length > 0 ? (
+//             results.map((item) => (
+//               // Use item.url as key, as it's likely unique from your CSV
+//               <div key={item.url} className="result-item">
+//                 <a href={item.url} target="_blank" rel="noopener noreferrer">
+//                   <h3>{item.title}</h3>
+//                 </a>
+//                 <p className="result-url">{item.url}</p>
+//                 <p className="result-snippet">{item.snippet}</p>
+//                 {/* Optional: Display score for debugging relevance */}
+//                 <p>Score: {item.score}</p> 
+//               </div>
+//             ))
+//           ) : (
+//             <p>No results found.</p>
+//           )}
 
 export default Results;
