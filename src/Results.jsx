@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import googlePic from "./images/google-pic.png";
 import { useLocation } from "react-router-dom";
 
@@ -12,13 +11,11 @@ function Results() {
   const getResults = async () => {
     try {
       const resp = await fetch(
-        `http://127.0.0.1:5000/search?q=${encodeURIComponent(query)}`
+        `http://127.0.0.1:5000/search?q=${query}`
       );
+      const data = await resp.json()
       console.log("get this query response", resp);
-      console.log(resp.data);
-      console.log(resp.items);
-      console.log("get this query", resp.data.items);
-      setResults(resp.data.items || []);
+     setResults(data.results || []);
     } catch (error) {
       console.error("Error fetching search results:", error);
       setResults([]);

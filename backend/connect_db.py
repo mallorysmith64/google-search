@@ -176,29 +176,14 @@ def search_engine():
     # -----------------------------
     # Define the Search Query (Semantic + Keyword)
     # -----------------------------
-    # We combine traditional keyword search on 'title' with semantic search on 'body_text'.
     search_body = {
         "query": {
-            "bool": {
-                "must": [
-                    {
-                        "semantic": {
-                            "field": "body_text",
-                            "query": user_query
-                        }
-                    }
-                ],
-                # Optional: Add a standard keyword match for better recall on titles
-                "should": [
-                    {
-                        "match": {
-                            "title": {
-                                "query": user_query,
-                                "boost": 2 # Boost title matches to make them more relevant
-                            }
-                        }
-                    }
-                ]
+            # Use multi_match to search across multiple text fields for keywords
+            "multi_match": {
+                "query": user_query,
+                # Search 'title' (with boost 2) and 'body_text' (default boost 1)
+                "fields": ["title^2", "body_text"], 
+                "type": "best_fields"
             }
         },
         "size": 10,
