@@ -57,9 +57,16 @@ input {
 }
 
 /* #google pic */
-img {
+.google-container-pics {
+  display:flex;
+  flex-direction: row;
   max-width: 30%;
   height: auto;
+}
+
+.cat-pic {
+  height:8em;
+  margin-top:1em;
 }
 
 /* all navbar */

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import googlePic from "./images/google-pic.png";
+import catPic from "./images/cat.jpeg";
 import { useNavigate } from "react-router-dom";
 
 function GooglePage() {
@@ -8,7 +9,7 @@ function GooglePage() {
 
   const handleClick = (event) => {
     event.preventDefault();
-   navigate("/results", { state: { query: query } });
+    navigate("/results", { state: { query: query } });
   };
 
   const handleChange = (event) => {
@@ -19,7 +20,11 @@ function GooglePage() {
   return (
     <>
       <div className="google-container">
-        <img src={googlePic} alt="Google Logo" />
+        <div className="google-container-pics">
+          <img src={googlePic} alt="Google Logo" />
+          <img className="cat-pic" src={catPic} alt="Cat picture" />
+        </div>
+
         <section>
           <form className="form-search" action="/search" method="get">
             <input
@@ -30,13 +35,9 @@ function GooglePage() {
               value={query}
             />
             <div className="search-btn-container">
-              <button
-                onClick={handleClick}
-                className="search-btn"
-              >
+              <button onClick={handleClick} className="search-btn">
                 Google Search
               </button>
-             
             </div>
           </form>
         </section>
