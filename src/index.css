@@ -100,3 +100,8 @@ img {
 .results-text-container::after {
   white-space: pre-wrap;
 }
+
+.no-results-container {
+  display:flex;
+  flex-direction: column;
+}

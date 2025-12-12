@@ -6,17 +6,18 @@ import os
 import csv
 import importlib.util
 
+import requests
+from bs4 import BeautifulSoup
+import re
+from datetime import datetime
+
 app = Flask(__name__)
-
-# 2. Add this line immediately after app = Flask(__name__)
-# This is the easiest way: it allows ALL origins (*) to access ALL routes.
 CORS(app)
-
 load_dotenv()
 
 # Attempt to import mapping_data; provide sensible defaults if not found
-
 spec = importlib.util.find_spec("mapping_data")
+# ... (The rest of the mapping_data import logic remains the same) ...
 if spec is not None:
     mapping_data = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mapping_data)
@@ -68,32 +69,25 @@ else:
             "snippet": "Home to Old Faithful and large bison herds."
         }
     ]
-    
-CSV_FILENAME = "britannica_news.csv"
-# --------------------------------------------------------
-# 1. Configuration (REPLACE WITH YOUR ACTUAL CREDENTIALS)
-# --------------------------------------------------------
-# Use the "Deployment ID" (the full, long string you copied) here.
-# This variable is your ELASTIC_CLOUD_ID.
-ELASTIC_HOST_URL = os.getenv("ELASTIC_HOST_URL")
-# Your API Key, which you generate on the same page as the Deployment ID.
-ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY")
 
+# --- MODIFIED: USE THE CORRECT FILENAME FOR THE SCRAPER ---
+CSV_FILENAME = "britannica_cat_data.csv"
+# --------------------------------------------------------------------------------------
+# 1. Configuration (REPLACE WITH YOUR ACTUAL CREDENTIALS) - REMAINS THE SAME
+# --------------------------------------------------------------------------------------
+ELASTIC_HOST_URL = os.getenv("ELASTIC_HOST_URL")
+ELASTIC_API_KEY = os.getenv("ELASTIC_API_KEY")
 client = None
 
 def init_elasticsearch_client():
-    """Initializes and returns the global Elasticsearch client."""
     global client
     if client is None:
         full_host_url = f"https://{ELASTIC_HOST_URL}"
         try:
-            # The Elasticsearch client uses the Cloud ID to figure out the
-            # hostname and port, making the connection simple and reliable.
             client = Elasticsearch(
                 [full_host_url],
                 api_key=ELASTIC_API_KEY
             )
-            # Check connection by pinging
             if client.ping():
                 print("Successfully connected to Elasticsearch.")
             else:
@@ -104,18 +98,82 @@ def init_elasticsearch_client():
             client = None
     return client
 
-# Initialize client on startup
 init_elasticsearch_client()
 
 # --------------------------------------------------------
-# 2. Index Setup Endpoint (RUN THIS ONCE)
+# Web Scraping Function
+# --------------------------------------------------------
+SCRAPE_URL = "https://www.britannica.com/animal/cat"
+
+def scrape_and_save_csv(url, filename):
+    """
+    Scrapes the specified URL, extracts the main text, and saves it to a CSV file.
+    This replaces the previous standalone scraping script.
+    """
+    print(f"--- STARTING SCRAPE: {url} ---")
+    try:
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Target the main content area (based on previous successful scrape)
+        main_content_container = soup.find('div', class_='topic-content')
+        if not main_content_container:
+            main_content_container = soup.find('div', id='content')
+            if not main_content_container:
+                print("❌ Main content container not found.")
+                return False
+
+        paragraphs = main_content_container.find_all('p')
+        full_text = []
+        for p in paragraphs:
+            text = p.get_text(strip=True)
+            if text:
+                cleaned_text = re.sub(r'\s+', ' ', text).strip()
+                full_text.append(cleaned_text)
+
+        article_text = ' '.join(full_text)
+        page_title = soup.title.string.replace('| Britannica', '').strip() if soup.title else 'Cat Article'
+        
+        # Data structure must match what load_data_from_csv expects
+        data_to_write = {
+            'timestamp': datetime.now().isoformat(),
+            'source_url': url,
+            'title': page_title,
+            # Use 'scraped_content' as the column name to match the scraper output
+            'scraped_content': article_text 
+        }
+        
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = data_to_write.keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+            writer.writeheader()
+            writer.writerow(data_to_write)
+        
+        print(f"✅ Successfully scraped data and saved to {filename}. Content length: {len(article_text)}")
+        return True
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error fetching the URL: {e}")
+    except Exception as e:
+        print(f"❌ An error occurred during scraping: {e}")
+    return False
+
+# --------------------------------------------------------
+# Index Setup Endpoint
 # --------------------------------------------------------
 @app.route('/index_data', methods=['POST'])
 def index_data():
     """
-    Creates the index, applies the 'Google-like' mapping, and bulk-ingests documents.
-    Run this endpoint only once when setting up your application.
+    Creates the index, applies the mapping, runs the scraper, and bulk-ingests documents.
     """
+    # 1. RUN THE SCRAPER BEFORE ANYTHING ELSE
+    scrape_success = scrape_and_save_csv(SCRAPE_URL, CSV_FILENAME)
+    if not scrape_success:
+        return jsonify({"error": "Indexing aborted because web scraping failed."}), 500
+
     es_client = init_elasticsearch_client()
     if not es_client:
         return jsonify({"error": "Elasticsearch connection failed"}), 500
@@ -124,9 +182,9 @@ def index_data():
         csv_documents = load_data_from_csv(CSV_FILENAME)
         if not csv_documents:
              return jsonify({"error": f"Failed to load documents from {CSV_FILENAME}. Check file path and contents."}), 500
-        # A. Create or verify index existence
+        
+        # A. Create or verify index existence (Remaining logic is the same)
         if es_client.indices.exists(index=INDEX_NAME):
-            # For simplicity, we delete and recreate to ensure the new mapping is applied
             es_client.indices.delete(index=INDEX_NAME, ignore=[400, 404])
             print(f"Index '{INDEX_NAME}' deleted for fresh start.")
 
@@ -140,7 +198,7 @@ def index_data():
         )
         print("Mappings updated:", mapping_response)
 
-        # C. Bulk ingest documents (allowing time for semantic model loading)
+        # C. Bulk ingest documents 
         ingestion_timeout=300 
         actions = [{'_index': INDEX_NAME, '_source': doc} for doc in csv_documents]
         bulk_response = helpers.bulk(
@@ -158,36 +216,26 @@ def index_data():
         return jsonify({"error": f"Indexing failed: {e}"}), 500
 
 # --------------------------------------------------------
-# 3. Search Endpoint (The Core Functionality)
+# Search Endpoint
 # --------------------------------------------------------
 @app.route('/search', methods=['GET'])
 def search_engine():
-    """
-    Performs a semantic search on the indexed data.
-    Usage: /search?q=your+query+here
-    """
     es_client = init_elasticsearch_client()
     if not es_client:
         return jsonify({"error": "Elasticsearch connection failed"}), 500
 
-    # Get query string from URL parameters (e.g., ?q=hiking trails)
-    user_query = request.args.get('q', 'Sierra Nevada') # Default query for testing
+    user_query = request.args.get('q', 'Sierra Nevada')
     
-    # -----------------------------
-    # Define the Search Query (Semantic + Keyword)
-    # -----------------------------
     search_body = {
         "query": {
-            # Use multi_match to search across multiple text fields for keywords
             "multi_match": {
                 "query": user_query,
-                # Search 'title' (with boost 2) and 'body_text' (default boost 1)
-                "fields": ["title^2", "body_text"], 
+                "fields": ["title^10", "body_text^5"], 
                 "type": "best_fields"
             }
         },
         "size": 10,
-        "_source": ["title", "url", "snippet"] # Only retrieve the fields we need for display
+        "_source": ["title", "url", "snippet"]
     }
 
     try:
@@ -198,15 +246,15 @@ def search_engine():
 
         results = []
         for hit in search_response['hits']['hits']:
-            # The search results now look like a typical Google snippet
+            # IMPORTANT: Add the unique Elasticsearch ID (_id) to the result object
             results.append({
+                "id": hit['_id'], # <<<--- ADD THIS LINE
                 "score": round(hit['_score'], 2),
                 "title": hit['_source'].get('title'),
                 "url": hit['_source'].get('url'),
                 "snippet": hit['_source'].get('snippet')
             })
 
-        # Return results as JSON or a simple HTML page
         return jsonify({
             "query": user_query,
             "total_hits": search_response['hits']['total']['value'],
@@ -217,11 +265,11 @@ def search_engine():
         return jsonify({"error": f"Search failed: {e}"}), 500
 
 # --------------------------------------------------------
-# 4. Simple Web Interface (Optional but helpful for testing)
+# 5. Simple Web Interface
 # --------------------------------------------------------
 @app.route('/', methods=['GET'])
 def home_page():
-    """A simple form to test the search endpoint."""
+    # ... (home_page function remains the same) ...
     html_template = """
     <!doctype html>
     <html lang="en">
@@ -259,8 +307,9 @@ def home_page():
     """
     return render_template_string(html_template)
 
-#put csv into elasticsearch
-url = "https://www.britannica.com"
+# --------------------------------------------------------
+# 6. CSV Loading Function (MODIFIED TO USE CORRECT COLUMNS)
+# --------------------------------------------------------
 
 def load_data_from_csv(filename):
     """
@@ -271,30 +320,86 @@ def load_data_from_csv(filename):
         with open(filename, mode='r', newline='', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             
+            # The columns produced by the scraper are: 
+            # 'timestamp', 'source_url', 'title', 'scraped_content'
+            
             for row in reader:
-                # IMPORTANT: Verify that 'Content' is the correct column header from your CSV
-                if 'Content' in row:
+                # Check for the column generated by the scraper
+                if 'scraped_content' in row:
                     documents.append({
-                        "title": "Britannica",
-                        "url": url,
-                        "body_text": row['Content'], 
-                        "snippet": row['Content'][:200].strip() + "..." 
+                        "title": row.get('title', 'Britannica Article'), # Use the scraped title
+                        "url": row.get('source_url', 'https://www.britannica.com'), # Use the scraped URL
+                        "body_text": row['scraped_content'], 
+                        "snippet": row['scraped_content'][:200].strip() + "..." 
                     })
                 else:
-                    print(f"🚨 Skipping row: 'Content' column not found in CSV row: {row.keys()}")
+                    print(f"🚨 Skipping row: 'scraped_content' column not found in CSV row: {row.keys()}")
             
         print(f"✅ Loaded {len(documents)} documents from {filename}.")
         return documents
 
     except FileNotFoundError:
-        # 🔑 This is the key error check
-        print(f"🚨 CRITICAL ERROR: Scraped data file '{filename}' not found. Check file path!")
-        return [] # Return an empty list so the indexer knows it failed
+        print(f"🚨 CRITICAL ERROR: Scraped data file '{filename}' not found. Run /index_data!")
+        return []
     except Exception as e:
         print(f"🚨 Error reading CSV: {e}")
         return []
+    
+# 5. Diagnostic Endpoint (NEW ADDITION)
+# --------------------------------------------------------
+@app.route('/check_content', methods=['GET'])
+def check_content():
+    """
+    Fetches the first document from the index to verify content and structure.
+    """
+    es_client = init_elasticsearch_client()
+    if not es_client:
+        return jsonify({"error": "Elasticsearch connection failed"}), 500
+
+    try:
+        # Fetch the first document only, sorted by insertion time (approx)
+        response = es_client.search(
+            index=INDEX_NAME,
+            body={
+                "query": {"match_all": {}},
+                "size": 1,
+                "_source": ["title", "body_text"] # Only fetch the fields we care about
+            }
+        )
+
+        hits = response['hits']['hits']
+        if not hits:
+            return jsonify({
+                "status": "Index is empty",
+                "message": f"Index '{INDEX_NAME}' contains 0 documents. Please run POST /index_data."
+            })
+            
+        first_doc = hits[0]['_source']
+        
+        # Check if the required fields are present
+        if 'body_text' not in first_doc:
+            return jsonify({
+                "status": "Error in Document Structure",
+                "message": "The indexed document does not contain the 'body_text' field.",
+                "doc_keys": list(first_doc.keys())
+            })
+            
+        # Analyze the body_text for keywords
+        body_text = first_doc['body_text']
+        
+        return jsonify({
+            "status": "Success - Content Verified",
+            "title": first_doc.get('title', 'N/A'),
+            "body_text_length": len(body_text),
+            "body_text_snippet": body_text[:500] + "...",
+            "contains_cat": "cat" in body_text.lower(),
+            "contains_feline": "feline" in body_text.lower(),
+            "IMPORTANT": "If 'contains_cat' or 'contains_feline' is False, the SCRAPING failed to grab the content."
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Diagnostic check failed: {e}"}), 500
+
 
 if __name__ == '__main__':
-    # You would typically use a more robust server like gunicorn for production
     app.run(debug=True, port=5000)
-    

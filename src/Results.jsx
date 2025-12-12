@@ -49,7 +49,7 @@ function Results() {
           {results.length > 0 ? (
             results.map((item) => (
               // Use item.url as key, as it's likely unique from your CSV
-              <div key={item.url} className="result-item">
+              <div key={item.id} className="result-item">
                 <a href={item.url} target="_blank" rel="noopener noreferrer">
                   <h3>{item.title}</h3>
                 </a>

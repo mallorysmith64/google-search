@@ -2,49 +2,15 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import re
-from urllib.robotparser import RobotFileParser
-from urllib.parse import urlparse # Helper for extracting domain
 
 # New Britannica URL
-url = "https://www.britannica.com"
-filename = "britannica_news.csv"
-YOUR_USER_AGENT = 'MyAwesomeCrawler/1.0 (+https://example.com/)' # IMPORTANT: Use your unique User-Agent
+url = "https://www.britannica.com/animal/cat"
+filename = "britannica_cat_data.csv"
 
 # Essential header to prevent 403 Forbidden error
 HEADERS = {
-    'User-Agent': YOUR_USER_AGENT
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 }
-
-def check_robots_txt_permission(target_url, user_agent):
-    """
-    Checks if the specified user_agent is allowed to fetch the target_url
-    according to the site's robots.txt file.
-    """
-    try:
-        # 1. Determine the robots.txt URL
-        parsed_url = urlparse(target_url)
-        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        robots_txt_url = base_url + "/robots.txt"
-
-        # 2. Initialize and read the parser
-        rp = RobotFileParser()
-        rp.set_url(robots_txt_url)
-        # Attempt to read the robots.txt file. This performs an HTTP request.
-        rp.read() 
-
-        # 3. Check permission
-        if rp.can_fetch(user_agent, target_url):
-            print(f"✅ robots.txt check: User-Agent '{user_agent}' **is allowed** to access this URL.")
-            return True
-        else:
-            print(f"🛑 robots.txt check: User-Agent '{user_agent}' **is disallowed** from accessing this URL.")
-            return False
-
-    except Exception as e:
-        # Handle cases where robots.txt is inaccessible (e.g., 404, DNS error).
-        # Standard convention is to assume permission if robots.txt cannot be found.
-        print(f"⚠️ Could not check robots.txt (Error: {e}). Assuming permission to proceed, but you should handle this case carefully.")
-        return True
 
 def scrape_britannica_to_csv(url, filename, headers):
     """
