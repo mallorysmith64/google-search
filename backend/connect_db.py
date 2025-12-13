@@ -5,11 +5,13 @@ from dotenv import load_dotenv
 import os
 import csv
 import importlib.util
+from elasticsearch.helpers import bulk
 
 import requests
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -59,7 +61,8 @@ def init_elasticsearch_client():
             print(f"Error initializing Elasticsearch client: {e}")
             client = None
     return client
-init_elasticsearch_client()
+
+es_client = init_elasticsearch_client()
 
 # --- SCRAPER FUNCTION (Brute-Force Text Extraction) ---
 def scrape_wikipedia_cat_to_csv(url, filename, headers):
@@ -350,6 +353,256 @@ def check_content():
 
     except Exception as e:
         return jsonify({"error": f"Diagnostic check failed: {e}"}), 500
+    
+    
+    
+#scrape reddit cat memes
+REDDIT_INDEX_NAME = 'reddit_cat_memes_index'
+REDDIT_URL = "https://www.reddit.com/r/Catmemes/"
+REDDIT_CSV_FILE = "reddit_cat_memes.csv"
+
+def scrape_reddit_cat_memes_to_csv(url, filename):
+    """
+    Scrapes Reddit using the stable, unofficial JSON endpoint via requests.
+    """
+    print(f"--- Starting JSON endpoint scrape for: {url} ---")
+    documents_to_write = []
+    
+    # Reddit expects a User-Agent string to not block requests
+    headers = {
+        'User-Agent': 'Simple-Python-Scraper-V1.0 (by marssmith)'
+    }
+    
+    try:
+        # 1. Make the request
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status() # Raises an HTTPError for bad responses (4xx or 5xx)
+        
+        data = response.json()
+        
+        # 2. Parse the JSON structure
+        if 'data' in data and 'children' in data['data']:
+            posts = data['data']['children']
+            print(f"--- DEBUG: Found {len(posts)} posts in the JSON response. ---")
+            
+            for post_item in posts:
+                post = post_item['data']
+                
+                # Extracting necessary fields from the JSON
+                # -----------------------------------------------------------------
+                # ALL LINES BELOW MUST BE INDENTED TO BE INSIDE THE FOR LOOP!
+                # -----------------------------------------------------------------
+                title = post.get('title', '').strip()
+                relative_url = post.get('permalink', '')
+                
+                if title and relative_url:
+                    # 1. Clean the title of non-standard characters
+                    clean_title = re.sub(r'[^\w\s\.-]', '', title).strip() 
+                    
+                    # Construct absolute URL
+                    absolute_url = f"https://www.reddit.com{relative_url}"
+                    
+                    # Combine the clean title with the terms 'cat meme'
+                    searchable_content = f"{clean_title} cat meme reddit" 
+                    
+                    documents_to_write.append({
+                        'timestamp': datetime.now().isoformat(),
+                        'source_url': absolute_url,
+                        'title': clean_title,
+                        'scraped_content': searchable_content
+                    })
+            # 3. WRITE DATA TO CSV
+            if documents_to_write:
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['timestamp', 'source_url', 'title', 'scraped_content'] 
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(documents_to_write)
+                
+                print(f"✅ Success! Found {len(documents_to_write)} posts. Data saved to {filename}.")
+                return True
+            else:
+                print("⚠️ JSON endpoint returned no posts.")
+                return False
+
+        else:
+            print("⚠️ JSON structure was unexpected. Could not find posts in 'data.children'.")
+            return False
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ HTTP Request failed: {e}")
+        return False
+    except json.JSONDecodeError:
+        print("❌ Failed to decode JSON response.")
+        print(f"Response Text Sample: {response.text[:200]}...")
+        return False
+    except Exception as e:
+        print(f"❌ Scraping failed: {e}")
+        return False
+
+def search_reddit_memes(query, page_size=50):
+    
+    """
+    Executes a search query against the dedicated Reddit index.
+    """
+    # NOTE: es_client must be initialized globally to be used here.
+
+    
+    search_body = {
+        "size": page_size,
+        "query": {
+            # Search across title and content fields, boosting the title
+            "multi_match": {
+                "query": query,
+                "fields": ["title^3", "scraped_content"], 
+                "type": "best_fields"
+            }
+        }
+    }
+    
+    try:
+        res = es_client.search(
+            index=REDDIT_INDEX_NAME, 
+            body=search_body,
+            request_timeout=30 # Add a generous timeout to ensure the query completes
+        )
+        
+        results = []
+        for hit in res['hits']['hits']:
+            source = hit['_source']
+            results.append({
+                'title': source['title'],
+                # Use scraped_content (the meme text/title) as the snippet
+                'snippet': source['scraped_content'], 
+                'url': source['source_url'],
+                'score': hit['_score'],
+                'source_type': 'Reddit Meme' # IMPORTANT for frontend differentiation
+            })
+        return results
+    
+    except Exception as e:
+        print(f"Error searching Reddit index: {e}")
+        return []
+    
+REDDIT_MAPPINGS = {
+    "properties": {
+        "title": {"type": "text"},
+        # This maps the content from the CSV
+        "scraped_content": {"type": "text"}, 
+        # Source URL is typically stored as a keyword
+        "source_url": {"type": "keyword"},   
+    }
+}
+def load_reddit_data_from_csv(filename):
+    """Loads documents from the Reddit CSV, mapping fields for Elasticsearch ingestion."""
+    documents = []
+    try:
+        with open(filename, mode='r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                # IMPORTANT: We use the actual column names from the scraper
+                documents.append({
+                    "title": row.get('title', 'Reddit Post'), 
+                    "source_url": row.get('source_url', REDDIT_URL), 
+                    "scraped_content": row['scraped_content'], 
+                })
+            print(f"✅ Loaded {len(documents)} documents from {filename} for Reddit index.")
+            return documents
+    except FileNotFoundError:
+        print(f"🚨 CRITICAL ERROR: Scraped data file '{filename}' not found. Run /index_reddit!")
+        return []
+    except Exception as e:
+        print(f"🚨 Error reading Reddit CSV: {e}")
+        return []
+    
+# --------------------------------------------------------
+# REDDIT INDEX SETUP ENDPOINT
+# --------------------------------------------------------
+@app.route('/index_reddit', methods=['POST'])
+def index_reddit_data():
+    """
+    Creates the Reddit index, applies the mapping, runs the scraper, and bulk-ingests documents.
+    """
+    # NOTE: Fix the REDDIT_URL to use the JSON endpoint:
+    # REDDIT_URL = "https://www.reddit.com/r/Catmemes/.json"4
+    global REDDIT_URL
+    
+    # Check if the global variable was updated for the JSON endpoint (since the provided code was HTML-based)
+    if not REDDIT_URL.endswith('.json'):
+        REDDIT_URL = REDDIT_URL.strip('/') + '/.json'
+        print(f"Updated REDDIT_URL to JSON endpoint: {REDDIT_URL}")
+
+    scrape_success = scrape_reddit_cat_memes_to_csv(REDDIT_URL, REDDIT_CSV_FILE)
+    if not scrape_success:
+        return jsonify({"error": "Reddit Indexing aborted because web scraping failed."}), 500
+
+    es_client = init_elasticsearch_client()
+    if not es_client:
+        return jsonify({"error": "Elasticsearch connection failed"}), 500
+
+    try:
+        csv_documents = load_reddit_data_from_csv(REDDIT_CSV_FILE)
+        if not csv_documents:
+             return jsonify({"error": f"Failed to load documents from {REDDIT_CSV_FILE}."}), 500
+        
+        # A. Delete/Create Index
+        if es_client.indices.exists(index=REDDIT_INDEX_NAME):
+            es_client.indices.delete(index=REDDIT_INDEX_NAME, ignore=[400, 404])
+            print(f"Index '{REDDIT_INDEX_NAME}' deleted for fresh start.")
+
+        es_client.indices.create(index=REDDIT_INDEX_NAME)
+
+        # B. Add or update mappings
+        es_client.indices.put_mapping(
+            index=REDDIT_INDEX_NAME,
+            body=REDDIT_MAPPINGS
+        )
+
+        # C. Bulk ingest documents 
+        actions = [{'_index': REDDIT_INDEX_NAME, '_source': doc} for doc in csv_documents]
+        print(f"Attempting to bulk ingest {len(csv_documents)} Reddit documents...")
+        bulk_response = helpers.bulk(
+            es_client.options(request_timeout=300),
+            actions,
+            refresh="wait_for" 
+        )
+        
+        successes, errors = bulk_response
+        
+        if errors:
+            print(f"🚨 Reddit Bulk Ingestion Errors: {len(errors)}")
+            return jsonify({"error": "Reddit Bulk ingestion encountered errors."}), 500
+        
+        return jsonify({
+            "status": f"Reddit Index created and {len(csv_documents)} documents ingested successfully",
+            "bulk_stats": bulk_response
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Reddit Indexing failed: {e}"}), 500
+    
+    # --------------------------------------------------------
+# REDDIT SEARCH ENDPOINT
+# --------------------------------------------------------
+@app.route('/search_reddit', methods=['GET'])
+def search_reddit_memes_endpoint():
+    es_client = init_elasticsearch_client()
+    if not es_client:
+        return jsonify({"error": "Elasticsearch connection failed"}), 500
+
+    user_query = request.args.get('q', 'funny cat')
+    
+    try:
+        results = search_reddit_memes(user_query) # This calls your existing function
+        
+        return jsonify({
+            "query": user_query,
+            "total_hits": len(results),
+            "results": results
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Reddit search failed: {e}"}), 500
 
 
 if __name__ == '__main__':
