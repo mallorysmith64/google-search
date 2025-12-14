@@ -62,6 +62,7 @@ input {
   flex-direction: row;
   max-width: 30%;
   height: auto;
+  margin-right:7em;
 }
 
 .cat-pic {
