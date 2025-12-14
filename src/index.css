@@ -69,6 +69,11 @@ input {
   margin-top:1em;
 }
 
+.google-container > img {
+  height:auto;
+  max-width: 30%;
+}
+
 /* all navbar */
 .navbar {
   background-color: white;
