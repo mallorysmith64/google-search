@@ -1,8 +1,8 @@
-#About Project
+# About Project
 
 Cat Search is a full-stack proof-of-concept application demonstrating a basic search engine pipeline. It integrates a Flask backend with an Elasticsearch service to index and search content. The frontend is a React application that queries the Flask API, which in turn queries Elasticsearch, and combines the results for display.
 
-##Features##
+## Features
 
 Dual-Source Indexing: Indexes data from a Wikipedia article on cats and posts from the /r/Catmemes subreddit.
 
@@ -12,7 +12,7 @@ Flask API: Provides REST endpoints for triggering indexing and performing combin
 
 Combined Search: Frontend queries both the Wikipedia index and the Reddit meme index simultaneously, displaying results in a unified list with clear source attribution.
 
-##Setup and Installation##
+# Setup and Installation
 
 git clone [repository URL]
 cd google-search
