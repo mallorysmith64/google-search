@@ -10,7 +10,7 @@
   "scripts": {
     "start": "react-scripts start",
     "start-elasticsearch": "/home/marssmith/github/google-search/env/bin/python /home/marssmith/github/google-search/backend/connect_db.py",
-    "dev":"vite",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -20,6 +20,7 @@
     "axios": "^1.13.2",
     "bulma": "^1.0.4",
     "instantsearch.css": "^8.8.0",
+    "netlify-cli": "^23.12.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-instantsearch": "^7.20.0",

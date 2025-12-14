@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import googlePic from "./images/google-pic.png";
 import catPic from "./images/cat.jpeg";
 import { useNavigate } from "react-router-dom";
+import Joke from "./Joke.jsx";
 
 function GooglePage() {
   let navigate = useNavigate();
@@ -41,6 +42,7 @@ function GooglePage() {
             </div>
           </form>
         </section>
+        <section className="joke-section">{<Joke />}</section>
       </div>
     </>
   );
