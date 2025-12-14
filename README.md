@@ -12,7 +12,7 @@ Flask API: Provides REST endpoints for triggering indexing and performing combin
 
 Combined Search: Frontend queries both the Wikipedia index and the Reddit meme index simultaneously, displaying results in a unified list with clear source attribution.
 
-# Setup and Installation
+## Setup and Installation
 
 git clone [repository URL]
 cd google-search
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 Configure Environment Variables: Create a .env file in the root directory and add your Elasticsearch connection details:
 
 **Example for Elastic Cloud:**
-ELASTIC_HOST_URL=<your-elastic-host.es.us-central1.gcp.cloud.es.io>
+ELASTIC_HOST_URL=<your-elastic-host.es.us-central1.gcp.cloud.es.io> </br>
 ELASTIC_API_KEY=<YOUR_ELASTIC_API_KEY_HERE>
 
 run connect_db.py
