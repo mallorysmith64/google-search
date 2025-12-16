@@ -28,11 +28,11 @@ Configure Environment Variables: Create a .env file in the root directory and ad
 ELASTIC_HOST_URL=<your-elastic-host.es.us-central1.gcp.cloud.es.io> </br>
 ELASTIC_API_KEY=<YOUR_ELASTIC_API_KEY_HERE>
 
-run connect_db.py
-
 **Front-end:**
 rm -rf package-lock.json, node_modules
 npm init
 npm install
 npm run dev to startup the application
+
+# Note: frontend and backend start with npm run dev, database has to be runnning for site to work
 
