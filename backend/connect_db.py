@@ -6,10 +6,12 @@ import os
 import csv
 import importlib.util
 from elasticsearch.helpers import bulk
+import cloudscraper
 
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
 from datetime import datetime
 import json
 
@@ -603,7 +605,154 @@ def search_reddit_memes_endpoint():
 
     except Exception as e:
         return jsonify({"error": f"Reddit search failed: {e}"}), 500
+    
+#--------------------------------------------------------
+# create index for cfa breeds
+#--------------------------------------------------------
 
+# 1. Elasticsearch client initialization
+CFA_INDEX_NAME = 'cat_fanciers_association_index'
+CFA_URL = "https://cfa.org/breeds/"
+CFA_CSV_FILE = "cfa_breeds_2025.csv"
+
+cfa_index_body = {
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "breed_analyzer": {"type": "english"}
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "name": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+            "description": {"type": "text", "analyzer": "breed_analyzer"},
+            "url": {"type": "keyword"},
+            "scraped_at": {"type": "date"}
+        }
+    }
+}
+
+# --- SCRAPER LOGIC ---
+
+def get_breed_links():
+    """Fetches list of all breed URLs from the main CFA index page."""
+    scraper = cloudscraper.create_scraper() 
+    print(f"📡 Accessing CFA Index: {CFA_URL}")
+    try:
+        response = scraper.get(CFA_URL, timeout=15)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        breed_links = []
+        seen_urls = set()
+        
+        for link in soup.find_all('a', href=True):
+            url = link['href']
+            name = link.get_text(strip=True)
+            # Filter for specific breed profile URLs
+            if "cfa.org" in url and len(url.split('/')) >= 4:
+                if not any(x in url.lower() for x in ['contact', 'about', 'privacy', 'tag', 'category']):
+                    if name and url not in seen_urls:
+                        breed_links.append({'name': name, 'url': url})
+                        seen_urls.add(url)
+        print(f"✅ Found {len(breed_links)} unique breeds.")
+        return breed_links
+    except Exception as e:
+        print(f"⚠️ Link Scrape Error: {e}")
+        return []
+
+def upload_cfa_to_es(breed_links, index_name):
+    """Visits each breed URL to get detailed descriptions and bulk uploads to ES."""
+    scraper = cloudscraper.create_scraper()
+    actions = []
+    
+    for i, breed in enumerate(breed_links):
+        print(f"  [{i+1}/{len(breed_links)}] Scraping: {breed['name']}")
+        try:
+            res = scraper.get(breed['url'], timeout=10)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            # Targets the main text content area
+            content = soup.find('div', class_='entry-content') or soup.find('main')
+            paragraphs = content.find_all('p')
+            desc = " ".join([p.get_text(strip=True) for p in paragraphs[:5]])
+        except Exception:
+            desc = "Description currently unavailable."
+
+        actions.append({
+            "_index": index_name,
+            "_id": breed['url'],
+            "_source": {
+                "name": breed['name'],
+                "url": breed['url'],
+                "description": desc,
+                "scraped_at": datetime.now().isoformat()
+            }
+        })
+        time.sleep(0.3) # Polite delay
+    
+    if actions:
+        successes, _ = helpers.bulk(es_client, actions)
+        return successes
+    return 0
+
+# --- FLASK ROUTES ---
+
+@app.route('/index_cfa', methods=['POST'])
+def index_cfa_data():
+    """API Endpoint to trigger scraping and indexing."""
+    if not es_client:
+        return jsonify({"error": "Elasticsearch not connected"}), 500
+    
+    links = get_breed_links()
+    if not links:
+        return jsonify({"error": "No breed links found"}), 500
+
+    # Reset index for clean data
+    try:
+        if es_client.indices.exists(index=CFA_INDEX_NAME):
+            es_client.indices.delete(index=CFA_INDEX_NAME)
+        
+        # Create index without 'number_of_shards'
+        es_client.indices.create(index=CFA_INDEX_NAME, body=cfa_index_body)
+        print(f"✅ Index {CFA_INDEX_NAME} created in serverless mode.")
+    except Exception as e:
+        return jsonify({"error": f"Index creation failed: {e}"}), 500
+    
+    count = upload_cfa_to_es(links, CFA_INDEX_NAME)
+    
+    return jsonify({
+        "status": "success", 
+        "message": f"Scraped and indexed {count} breeds from CFA."
+    })
+
+@app.route('/search_cfa', methods=['GET'])
+def search_cfa():
+    """API Endpoint to search the indexed breed data."""
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify([])
+    
+    try:
+        res = es_client.search(index=CFA_INDEX_NAME, body={
+            "query": {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["name^3", "description"]
+                }
+            }
+        })
+        results = [hit['_source'] for hit in res['hits']['hits']]
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/', methods=['GET'])
+def home():
+    return """
+    <h1>CFA Breed Search API</h1>
+    <p>1. Run <b>POST /index_cfa</b> to scrape data.</p>
+    <p>2. Use <b>GET /search_cfa?q=keyword</b> to search.</p>
+    """
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+    

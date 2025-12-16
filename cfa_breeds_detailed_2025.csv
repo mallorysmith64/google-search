@@ -1,0 +1,72 @@
+name,url,description
+HOME,https://cfa.org/,Content area not found.
+CAT TALK,https://cfa.org/cat-talk/,Content area not found.
+Ecat Login,https://ecat.cfa.org/client/welcome.aspx,Content area not found.
+CATALOG,https://catalog.cfa.org/,"Error: HTTPSConnectionPool(host='catalog.cfa.org', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1033)')))"
+Breeds,https://cfa.org/breeds/,Content area not found.
+Find a Breeder Website Advertising,https://find-a-breeder.cfa.org/,Content area not found.
+Breed Council Secretary Candidates,https://cfa.org/breed-council-declared-candidates/,Content area not found.
+2024 Breed Council Ballots,https://cfa.org/2024-breed-council-ballots/,Content area not found.
+Acceptance of New Breeds And Colors,https://cfa.org/cfa-new-breeds-and-colors/,Content area not found.
+Registration,https://cfa.org/registration-overview/,Content area not found.
+Registering a Cat For Outcross Breeding,https://catalog.cfa.org/certificates.shtml#domestic,"Error: HTTPSConnectionPool(host='catalog.cfa.org', port=443): Max retries exceeded with url: /certificates.shtml (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1033)')))"
+Using CatTrack Litters on eCat,https://ecat.cfa.org/assets/docs/UsingCatTrackLitters.pdf,Content area not found.
+Shows & Events,https://cfa.org/shows-events/,Content area not found.
+Entering a Show,https://cfa.org/entering-a-show/,"The information on the entry form is entered into a database which is used to generate the show catalog. Each cat entered in the show is listed in the catalog. An entry will look like this in the show catalog: The line with “AA BB CC DD EE FF” indicates the initials of the judge in each ring. The next line is the BREED, which is followed by the CLASS NUMBER, COLOR and SEX. The NAME of the cat is shown on the same line as the ENTRY NUMBER and a space to mark awards received in each ring. The REGISTRATION NUMBER and BIRTHDATE, and the CLASS entered The SIRE"
+Archives & Show Counts,https://cfa.org/official-show-counts/,Content area not found.
+Annual Meeting & Awards Ceremony,https://cfa.org/annual/,No description found.
+International Show & Expo,https://cfa.org/catexpo/,"International Exposition Center1 I-X Center DriveCleveland, Ohio USA Saturday: 10:00am - 6:00pmSunday: 10:00am - 5:00pm"
+CFA Show Catalog Forms,https://cfa.org/cfa-show-catalog-forms/,Content area not found.
+Judges’ Emeritus,https://cfa.org/judges-emeritus/,Content area not found.
+Judges’ Association Spotlight Recipients,https://cfa.org/judges-association-spotlight-recipients/,Content area not found.
+CFA Bylaws,https://cfa.org/wp-content/uploads/2024/06/cfa-by-laws.pdf,Content area not found.
+CFA Timetable,https://cfa.org/cfa-timetable/,Content area not found.
+Abusive Conduct Prevention Policy,https://cfa.org/wp-content/uploads/2024/07/CFA-abusive-conduct-policy.pdf,Content area not found.
+Conflict of Interest Policy,https://cfa.org/wp-content/uploads/2024/07/CFA-conflict-of-interest-policy.pdf,Content area not found.
+Health & Welfare Policy,https://cfa.org/wp-content/uploads/2024/08/CFA-health-and-welfare-policy.pdf,Content area not found.
+Whistleblower Policy,https://cfa.org/wp-content/uploads/2024/07/CFA-whistle-blower-policy.pdf,Content area not found.
+Apply for a New Club,https://cfa.org/cfa-member-clubs/#club-application,Content area not found.
+Current Club Applicants,https://cfa.org/cfa-member-clubs/#club-applicants,Content area not found.
+Top Cats Gallery,https://cfa.org/top-cats-gallery/,Content area not found.
+National Winners,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=national-winners,Content area not found.
+Top Cats,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=top-cats,Content area not found.
+Top Kittens,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=top-kittens,Content area not found.
+Top Cats in Premiership,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=top-premiers,Content area not found.
+Top Household Pets,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=top-household-pets,Content area not found.
+Breed Winners,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=breed-winners,Content area not found.
+Grands,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=grands,Content area not found.
+Grands of Distinction,https://cfa.org/top-cats-gallery/?_sft_cat_award_type=grands-of-distinction,Content area not found.
+Regions 1-9,https://cfa.org/top-cats-gallery/?_sft_cat_region=r1-9,Content area not found.
+China,https://cfa.org/top-cats-gallery/?_sft_cat_region=china,Content area not found.
+International,https://cfa.org/top-cats-gallery/?_sft_cat_region=international,Content area not found.
+2024-25,https://cfa.org/top-cats-gallery/?_sft_cat_year=2024-25,Content area not found.
+2023-24,https://cfa.org/top-cats-gallery/?_sft_cat_year=2023-24,Content area not found.
+2022-23,https://cfa.org/top-cats-gallery/?_sft_cat_year=2022-23,Content area not found.
+2021-22,https://cfa.org/top-cats-gallery/?_sft_cat_year=2021-22,Content area not found.
+2020-21,https://cfa.org/top-cats-gallery/?_sft_cat_year=2020-21,Content area not found.
+2019-20,https://cfa.org/top-cats-gallery/?_sft_cat_year=2019-20,Content area not found.
+2018-19,https://cfa.org/top-cats-gallery/?_sft_cat_year=2018-19,Content area not found.
+2017-18,https://cfa.org/top-cats-gallery/?_sft_cat_year=2017-18,Content area not found.
+2016-17,https://cfa.org/top-cats-gallery/?_sft_cat_year=2016-17,Content area not found.
+2015-16,https://cfa.org/top-cats-gallery/?_sft_cat_year=2015-16,Content area not found.
+2014-15,https://cfa.org/top-cats-gallery/?_sft_cat_year=2014-15,Content area not found.
+Resources,https://cfa.org/resources/,Content area not found.
+Breeder Code of Ethics,https://cfa.org/code-of-ethics/,Content area not found.
+Breed/Color Prefix Chart,https://cfa.org/color-prefix-chart/,Content area not found.
+CFA Newsletter Archives,https://cfa.org/cfa-newsletter-archives/,Content area not found.
+Grand Points Lookup (Herman),https://ecat.cfa.org/public/hermanonline.aspx,Content area not found.
+Special Offers,https://cfa.org/special-offers/,Content area not found.
+"AbyssinianAbyssinianCoat Length:ShorthairCharacteristics:Ticked coat; ruddy, cinnamon, blue and fawn colorsPersonality:Busy, active, agenda-driven and affectionate",https://cfa.org/breed/abyssinian/,Content area not found.
+"American BobtailAmerican BobtailCoat Length:Longhair and ShorthairCharacteristics:Medium to large, naturally occurring, bobtailed catPersonality:Loving and intelligent",https://cfa.org/breed/american-bobtail/,Content area not found.
+"American CurlAmerican CurlCoat Length:Longhair and ShorthairCharacteristics:Ears curl back, away from the face; available in a variety of colors and patternsPersonality:Energetic and affectionate",https://cfa.org/breed/american-curl/,Content area not found.
+"American ShorthairAmerican ShorthairCoat Length:ShorthairCharacteristics:Stocky, working breed: available in a wide variety of colors and patternsPersonality:Even temperament",https://cfa.org/breed/american-shorthair/,Content area not found.
+"American WirehairAmerican WirehairCoat Length:ShorthairCharacteristics:Crimped, springy coat; available in a variety of colors and patternsPersonality:Even temperament",https://cfa.org/breed/american-wirehair/,Content area not found.
+"BalineseBalineseCoat Length:LonghairCharacteristics:Longhaired variety of the Siamese and Colorpoint ShorthairPersonality:Vocal, affectionate, active",https://cfa.org/breed/balinese/,Content area not found.
+"BengalBengalCoat Length:ShorthairCharacteristics:Richly colored, highly contrasted coat of vivid spots or distinctive marblingPersonality:Curious and athletic",https://cfa.org/breed/bengal/,Content area not found.
+BirmanBirmanCoat Length:LonghairCharacteristics:Stocky body with white feet and point color pattern; easy to groom coat of intermediate lengthPersonality:Sweet and affectionate,https://cfa.org/breed/birman/,Content area not found.
+"BombayBombayCoat Length:ShorthairCharacteristics:Glossy, black coatPersonality:Playful and affectionate; lap cats",https://cfa.org/breed/bombay/,Content area not found.
+"British ShorthairBritish ShorthairCoat Length:ShorthairCharacteristics:Stocky, sturdy, plush coat; blue is very popular but also comes in other colorsPersonality:Calm and quiet; enjoy people",https://cfa.org/breed/british-shorthair/,Content area not found.
+"BurmeseBurmeseCoat Length:ShorthairCharacteristics:Stocky and well muscled; sable, also champagne, blue and platinumPersonality:People oriented, affectionate",https://cfa.org/breed/burmese/,Content area not found.
+"BurmillaBurmillaCoat Length:Longhair and ShorthairCharacteristics:Sparkling silver coat, and distinctive “make up” lining the nose, lips and eyesPersonality:Sociable, playful, and affectionate",https://cfa.org/breed/burmilla/,Content area not found.
+CFA & Our Programs,https://cfa.org/cfa-programs/,Content area not found.
+Breeders & Exhibitors,https://cfa.org/become-a-breeder/,Content area not found.

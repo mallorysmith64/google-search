@@ -4,7 +4,7 @@ import time
 import csv
 
 # --- CONFIGURATION ---
-CFA_INDEX_URL = "https://cfa.org/breeds/"
+CFA_URL = "https://cfa.org/breeds/"
 CFA_CSV_FILENAME = "cfa_breeds_2025.csv"
 
 def get_breed_links():
@@ -13,7 +13,7 @@ def get_breed_links():
     print(f"📡 Accessing CFA Index...")
     
     try:
-        response = scraper.get(CFA_INDEX_URL)
+        response = scraper.get(CFA_URL)
         if response.status_code != 200:
             print(f"❌ Blocked! Status Code: {response.status_code}")
             return []
@@ -56,3 +56,4 @@ if __name__ == "__main__":
         print(f"📂 Saved to {CFA_CSV_FILENAME}")
     else:
         print("Still 0 links. The site may require a Headless Browser (Selenium).")
+        
