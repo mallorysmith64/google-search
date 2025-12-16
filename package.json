@@ -8,9 +8,10 @@
   "type": "module",
   "main": "eslint.config.js",
   "scripts": {
-    "start": "react-scripts start",
+    "start": "npm run dev",
+    "start-frontend": "vite",
     "start-elasticsearch": "/home/marssmith/github/google-search/env/bin/python /home/marssmith/github/google-search/backend/connect_db.py",
-    "dev": "vite",
+    "dev": "concurrently \"npm run start-elasticsearch\" \"npm run start-frontend\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
