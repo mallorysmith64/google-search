@@ -1,188 +1,58 @@
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup
-import time 
-import re
+import time
 import csv
-from datetime import datetime
-import sys
-import os
 
 # --- CONFIGURATION ---
 CFA_INDEX_URL = "https://cfa.org/breeds/"
-CFA_BASE_URL = "https://cfa.org" 
-CFA_CSV_FILENAME = "cat_fanciers_association.csv"
-CFA_SCRAPE_DELAY = 1  # Seconds to wait between page requests (Be polite!)
+CFA_CSV_FILENAME = "cfa_breeds_2025.csv"
 
-CFA_HEADERS = {
-    'User-Agent': 'Simple-Python-Scraper-V1.0 (by marssmith)'
-}
-
-# --- Step 1: Get all breed names and their URLs from the index page ---
-# --- Step 1: Get all breed names and their URLs from the index page ---
-def get_breed_links(url, headers):
-    """Fetches the index page and extracts all breed names and relative URLs."""
-    print(f"--- 1. Fetching Breed Index from: {url} ---")
-    breed_links = []
+def get_breed_links():
+    # 'cloudscraper' bypasses common bot-detection screens
+    scraper = cloudscraper.create_scraper() 
+    print(f"📡 Accessing CFA Index...")
     
     try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
+        response = scraper.get(CFA_INDEX_URL)
+        if response.status_code != 200:
+            print(f"❌ Blocked! Status Code: {response.status_code}")
+            return []
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        breed_links = []
         
-        # --- REVISED SELECTOR: Target ALL links (<a>) on the page ---
-        # Then we filter them based on the breed profile URL pattern.
-        # This is the last resort before needing a more specific class name.
-        all_links = soup.find_all('a')
-        # -------------------------------------------------------------
-
-        # Filter links based on the URL pattern and text
-        seen_urls = set()
-        for link in all_links:
-            href = link.get('href')
-            text = link.get_text(strip=True)
+        # CFA's 2025 structure uses 'wp-block-columns' or 'wp-block-image' 
+        # for their breed grid. We search for links with breed names.
+        # We target links that are direct children of the breed list.
+        for link in soup.find_all('a', href=True):
+            url = link['href']
+            name = link.get_text(strip=True)
             
-            # Validation:
-            if (href and '/breeds/' in href and 
-                href.count('/') > 2 and 
-                text and text not in seen_urls):
-                
-                # --- CRITICAL NEW FILTER ---
-                # 1. Exclude the link if the text is simply 'Breeds'
-                if text.lower() == 'breeds':
+            # Logic: We want URLs that look like cfa.org/abyssinian/
+            # We filter out generic nav links and resources
+            if "cfa.org" in url and len(url.split('/')) >= 4:
+                # Exclude common footer/header noise
+                if any(x in url.lower() for x in ['contact', 'about', 'privacy', 'tag', 'category']):
                     continue
-                # 2. Exclude common navigation text
-                if text.lower() in ['view all breeds', 'see all breeds', 'next', 'back', 'read more']:
-                    continue
-                # --------------------------
+                if name and len(name) > 2:
+                    breed_links.append({'name': name, 'url': url})
 
-                full_url = BASE_URL + href if href.startswith('/') else href
-                
-                breed_links.append({
-                    'name': text,
-                    'url': full_url
-                })
-                seen_urls.add(href)
-                
-        print(f"✅ Found {len(breed_links)} unique breed links.")
-        return breed_links
+        # Remove duplicates
+        unique_breeds = {v['url']: v for v in breed_links}.values()
+        print(f"✅ Found {len(unique_breeds)} unique breeds!")
+        return list(unique_breeds)
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error fetching index page: {e}")
-        return []
     except Exception as e:
-        print(f"❌ Unexpected error in get_breed_links: {e}")
+        print(f"⚠️ Error: {e}")
         return []
 
-# --- Step 2: Scrape details from each breed profile page ---
-def scrape_breed_profile(breed_link, headers):
-    """Fetches a single breed page and extracts key information."""
-    url = breed_link['url']
-    breed_data = {
-        'timestamp': datetime.now().isoformat(),
-        'name': breed_link['name'], 
-        'url': url,
-        'description': "Description not found.",
-        'personality': 'N/A',
-        'body_type': 'N/A',
-        'coat_length': 'N/A',
-    }
-    
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Extract Main Description
-        description_paragraphs = soup.find('div', class_='post-content') or soup.find('main')
-        
-        description = []
-        if description_paragraphs:
-            for tag in description_paragraphs.find_all(['p', 'h3'], recursive=False):
-                if tag.name == 'p' and tag.get_text(strip=True):
-                    description.append(tag.get_text(strip=True))
-                if tag.name == 'h3' and len(description) > 0:
-                    break
-        
-        breed_data['description'] = ' '.join(description) if description else "Description not found."
-
-        # Extract Key Facts (Personality, Body Type, etc.)
-        key_facts_container = soup.find('div', class_=re.compile(r'(facts|characteristics|sidebar)'))
-        
-        facts = {}
-        if key_facts_container:
-            for item in key_facts_container.find_all(['strong', 'dt']):
-                key = item.get_text(strip=True).replace(':', '')
-                value_tag = item.next_sibling
-                
-                if value_tag:
-                    value = value_tag.get_text(strip=True) if hasattr(value_tag, 'get_text') else str(value_tag).strip()
-                    if value and len(key) < 50:
-                         facts[key] = value
-
-        # Map key facts to expected CSV fields
-        breed_data['personality'] = facts.get('Personality', facts.get('Temperament', 'N/A'))
-        breed_data['body_type'] = facts.get('Body Type', 'N/A')
-        breed_data['coat_length'] = facts.get('Coat Length', 'N/A')
-        
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Network error fetching breed page {url}: {e}", file=sys.stderr)
-    except Exception as e:
-        # Catch parsing errors but return whatever we've collected so far
-        print(f"❌ Error parsing breed page {url}: {e}", file=sys.stderr)
-
-    return breed_data
-
-# --- Main Execution Function (Equivalent to main scraper logic in your Reddit file) ---
-def scrape_cfa_breeds_to_csv(url, filename):
-    """Executes the full two-step scraping process and saves to CSV."""
-    all_breeds_data = []
-    
-    # Step 1: Get all links
-    breed_links = get_breed_links(url, CFA_HEADERS)
-    
-    if not breed_links:
-        print("Scraping aborted: Could not retrieve breed links.")
-        return False
-
-    # Step 2: Scrape each profile
-    print(f"\n--- 2. Scraping {len(breed_links)} Profile Pages ---")
-    
-    for i, link in enumerate(breed_links):
-        print(f"  ({i + 1}/{len(breed_links)}) Scraping: {link['name']}")
-        data = scrape_breed_profile(link, CFA_HEADERS)
-        all_breeds_data.append(data)
-        
-        # Be polite and wait between requests
-        if i < len(breed_links) - 1:
-            time.sleep(CFA_SCRAPE_DELAY)
-
-    print("\n--- ✅ Profile Scraping Complete ---")
-    
-    # Step 3: Write data to CSV
-    if all_breeds_data:
-        fieldnames = ['timestamp', 'name', 'url', 'description', 'personality', 'body_type', 'coat_length']
-        
-        try:
-            with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
-                writer.writeheader()
-                writer.writerows(all_breeds_data)
-            
-            print(f"✨ Data successfully saved to {filename} ({len(all_breeds_data)} records).")
-            return True
-        except Exception as e:
-            print(f"❌ Failed to write to CSV file: {e}", file=sys.stderr)
-            return False
+if __name__ == "__main__":
+    breeds = get_breed_links()
+    if breeds:
+        with open(CFA_CSV_FILENAME, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=['name', 'url'])
+            writer.writeheader()
+            writer.writerows(breeds)
+        print(f"📂 Saved to {CFA_CSV_FILENAME}")
     else:
-        print("⚠️ No data was scraped to write to CSV.")
-        return False
-
-
-# If you run this file directly, it will execute the scraper
-if __name__ == '__main__':
-    # Add a small delay for politeness if running standalone
-    time.sleep(1) 
-    if scrape_cfa_breeds_to_csv(CFA_INDEX_URL, CFA_CSV_FILENAME):
-        print(f"\nStandalone CFA scrape complete. Check {CFA_CSV_FILENAME}")
-    else:
-        print("\nStandalone CFA scrape failed.")
+        print("Still 0 links. The site may require a Headless Browser (Selenium).")
