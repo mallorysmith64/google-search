@@ -698,26 +698,29 @@ def upload_cfa_to_es(breed_links, index_name):
 
 @app.route('/index_cfa', methods=['POST'])
 def index_cfa_data():
-    """API Endpoint to trigger scraping and indexing."""
     if not es_client:
         return jsonify({"error": "Elasticsearch not connected"}), 500
     
+    print("--- 📡 STEP 1: Fetching Links from CFA ---")
     links = get_breed_links()
+    
     if not links:
-        return jsonify({"error": "No breed links found"}), 500
+        print("❌ CRITICAL: No links found. CFA might be blocking the request.")
+        return jsonify({"error": "No breed links found. Check terminal logs."}), 500
 
-    # Reset index for clean data
+    print(f"✅ Found {len(links)} links. Proceeding to create index...")
+
     try:
         if es_client.indices.exists(index=CFA_INDEX_NAME):
             es_client.indices.delete(index=CFA_INDEX_NAME)
         
-        # Create index without 'number_of_shards'
         es_client.indices.create(index=CFA_INDEX_NAME, body=cfa_index_body)
-        print(f"✅ Index {CFA_INDEX_NAME} created in serverless mode.")
     except Exception as e:
         return jsonify({"error": f"Index creation failed: {e}"}), 500
     
+    print("--- 📥 STEP 2: Scraping Details & Ingesting to ES ---")
     count = upload_cfa_to_es(links, CFA_INDEX_NAME)
+    print(f"🎉 SUCCESS: Indexed {count} breeds.")
     
     return jsonify({
         "status": "success", 
@@ -726,7 +729,6 @@ def index_cfa_data():
 
 @app.route('/search_cfa', methods=['GET'])
 def search_cfa():
-    """API Endpoint to search the indexed breed data."""
     query = request.args.get('q', '')
     if not query:
         return jsonify([])
@@ -736,23 +738,87 @@ def search_cfa():
             "query": {
                 "multi_match": {
                     "query": query,
-                    "fields": ["name^3", "description"]
+                    "fields": ["name^5", "description"],
+                    "type": "best_fields",
+                    "fuzziness": "AUTO" # This helps if you search "breeds" vs "breed"
                 }
             }
         })
         results = [hit['_source'] for hit in res['hits']['hits']]
         return jsonify(results)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify([])
 
-@app.route('/', methods=['GET'])
-def home():
-    return """
-    <h1>CFA Breed Search API</h1>
-    <p>1. Run <b>POST /index_cfa</b> to scrape data.</p>
-    <p>2. Use <b>GET /search_cfa?q=keyword</b> to search.</p>
-    """
+@app.route('/api/search_all', methods=['GET'])
+def search_all():
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({"breeds": [], "facts": [], "memes": []})
 
+    # Optimized CFA Search
+    try:
+        breed_res = es_client.search(index=CFA_INDEX_NAME, body={
+            "query": {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["name^5", "description"], # Priority on Name
+                    "fuzziness": "AUTO",                 # Handles minor typos
+                    "type": "best_fields"
+                }
+            }
+        })
+        # Debug: Print to terminal to see if ES is actually returning anything
+        print(f"CFA Results found: {breed_res['hits']['total']['value']}")
+        breeds = [hit['_source'] for hit in breed_res['hits']['hits']]
+    except Exception as e:
+        print(f"Error searching CFA index: {e}")
+        breeds = []
+
+    # Facts search (uses the Wikipedia/article index)
+    facts = []
+    try:
+        if es_client.indices.exists(index=INDEX_NAME):
+            facts_res = es_client.search(
+                index=INDEX_NAME,
+                body={
+                    "query": {
+                        "multi_match": {
+                            "query": query,
+                            "fields": ["title^3", "body_text", "snippet"],
+                            "type": "best_fields"
+                        }
+                    },
+                    "size": 5,
+                    "_source": ["title", "url", "snippet", "body_text"]
+                }
+            )
+            facts = [hit['_source'] for hit in facts_res['hits']['hits']]
+    except Exception as e:
+        print(f"Error searching facts index: {e}")
+        facts = []
+
+    # 3. Search Reddit Memes
+    memes = search_reddit_memes(query)
+
+    return jsonify({
+        "breeds": breeds,
+        "facts": facts,
+        "memes": memes
+    })
+    
+@app.route('/debug_cfa', methods=['GET'])
+def debug_cfa():
+    try:
+        # Ask ES for every document in the CFA index
+        res = es_client.search(index=CFA_INDEX_NAME, body={"query": {"match_all": {}}, "size": 10})
+        count = es_client.count(index=CFA_INDEX_NAME)['count']
+        
+        return jsonify({
+            "total_documents_in_index": count,
+            "sample_data": [hit['_source'] for hit in res['hits']['hits']]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
     

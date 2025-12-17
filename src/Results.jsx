@@ -10,106 +10,98 @@ function Results() {
 
   const getResults = async () => {
     if (!query) {
-        setLoading(false);
-        return;
+      setLoading(false);
+      return;
     }
-    
+
     setLoading(true);
-    const host = "http://127.0.0.1:5000"; // Define host for easy maintenance
+    const host = "http://127.0.0.1:5000";
 
     try {
-      // 1. Define both fetch operations using Promise.all
-      const [wikiResponse, redditResponse] = await Promise.all([
-        // Fetch 1: Wikipedia Search
-        fetch(`${host}/search?q=${query}`).catch(err => {
-            console.error("Wikipedia search failed:", err);
-            return { json: () => ({ results: [] }) }; // Return fallback for failed promise
-        }),
-        // Fetch 2: Reddit Search
-        fetch(`${host}/search_reddit?q=${query}`).catch(err => {
-            console.error("Reddit search failed:", err);
-            return { json: () => ({ results: [] }) }; // Return fallback for failed promise
-        })
+      // STEP 1: Fetch
+      const [wikiRes, redditRes, cfaRes] = await Promise.all([
+        fetch(`${host}/search?q=${query}`).catch(() => ({ json: () => ({ results: [] }) })),
+        fetch(`${host}/search_reddit?q=${query}`).catch(() => ({ json: () => ({ results: [] }) })),
+        fetch(`${host}/search_cfa?q=${query}`).catch(() => ({ json: () => [] }))
       ]);
 
-      // 2. Parse JSON from both responses
-      const wikiData = await wikiResponse.json();
-      const redditData = await redditResponse.json();
-      
-      // 3. Normalize and combine the data
-      
-      // Normalize Wikipedia results (add source type)
-      const wikiResults = (wikiData.results || []).map(item => ({
+      // STEP 2: Parse
+      const wikiData = await wikiRes.json();
+      const redditData = await redditRes.json();
+      const cfaData = await cfaRes.json();
+
+      // STEP 3: Normalize (Everything happens INSIDE here now)
+      const normalizedWiki = (wikiData.results || []).map(item => ({
         ...item,
         source_type: "Wikipedia Article"
       }));
 
-      // Reddit results already have source_type, just handle the fallback
-      const redditResults = redditData.results || [];
+      const normalizedReddit = redditData.results || [];
 
-      // Combine Reddit results (memes) first, then Wikipedia articles
-      const combinedResults = [...redditResults, ...wikiResults];
-      
-      // console.log("Combined Results:", combinedResults); // Uncomment for debugging
-      setResults(combinedResults);
+      const normalizedCfa = (Array.isArray(cfaData) ? cfaData : []).map(item => ({
+        title: item.name || "Unknown Breed",
+        snippet: item.description || "No description available",
+        url: item.url,
+        source_type: "CFA Breed Profile"
+      }));
+
+      // STEP 4: Set results
+      setResults([...normalizedCfa, ...normalizedReddit, ...normalizedWiki]);
 
     } catch (error) {
-      console.error("Error fetching search results:", error);
+      console.error("Search failed:", error);
       setResults([]);
     } finally {
-      setLoading(false); // Stop loading regardless of success/failure
+      setLoading(false);
     }
   };
 
+  // --- DELETE THE ORPHANED cfaResults BLOCK THAT WAS HERE ---
+
   useEffect(() => {
-    console.log("use effect is running");
     getResults();
   }, [query]);
 
   if (loading) {
-    return <div>Loading results...</div>;
+    return <div className="loading-container">Loading cat data...</div>;
   }
 
-  const headerText = query
-    ? `Results for: "${query}" (${results.length} total)`
-    : "Please enter a search query.";
-
   return (
-    <>
-      <div className="google-container">
-        <img src={googlePic} alt="Google Logo" />
+    <div className="google-container">
+      <img src={googlePic} alt="Google Logo" style={{ width: '150px' }} />
 
-        <section className="search-text-container">
-          <div className="results-text-container">
-            <h2 className="results-text-header">{headerText} </h2>
-          </div>
-          {results.length > 0 ? (
-            results.map((item, index) => (
-              // Use index or a combination of url/title/source_type as a key, since item.id might be duplicated
-              <div key={item.url || index} className="result-item">
-                <a href={item.url} target="_blank" rel="noopener noreferrer">
-                  <h3>
-                    {item.title || 'No Title'}
-                    {/* Display Source Type */}
-                    <span style={{ fontSize: '0.8em', color: item.source_type === 'Reddit Meme' ? 'red' : 'green', marginLeft: '10px' }}>
-                        [{item.source_type}]
-                    </span>
-                  </h3>
-                </a>
-                <p className="result-url">{item.url}</p>
-                <p className="result-snippet">{item.snippet}</p>
-                {/* Optional: Display score for debugging relevance */}
-                <p>Score: {item.score}</p>
-              </div>
-            ))
-          ) : (
-            <div>
-              <p>No results found.</p>
+      <section className="search-text-container">
+        <div className="results-text-container">
+          <h2 className="results-text-header">
+            {query ? `Results for: "${query}" (${results.length} total)` : "Please enter a search query."}
+          </h2>
+        </div>
+
+        {results.length > 0 ? (
+          results.map((item, index) => (
+            <div key={item.url || index} className="result-item">
+              <a href={item.url} target="_blank" rel="noopener noreferrer">
+                <h3>
+                  {item.title}
+                  <span style={{ 
+                    fontSize: '0.7em', 
+                    marginLeft: '10px',
+                    color: item.source_type === 'Reddit Meme' ? 'red' : 
+                           item.source_type === 'CFA Breed Profile' ? '#0056b3' : 'green' 
+                  }}>
+                    [{item.source_type}]
+                  </span>
+                </h3>
+              </a>
+              <p className="result-url">{item.url}</p>
+              <p className="result-snippet">{item.snippet}</p>
             </div>
-          )}
-        </section>
-      </div>
-    </>
+          ))
+        ) : (
+          <p>No results found for your search.</p>
+        )}
+      </section>
+    </div>
   );
 }
 
